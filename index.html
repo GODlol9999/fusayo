@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>GPTgame</title>
+</head>
+<body>
+  <!-- �L�����o�X�v�f���ǉ� -->
+  <canvas id="mycanvas" width="640" height="480"></canvas>
+
+  <!-- JavaScript�̃R�[�h��<body>�^�O�̍Ō��Ɉړ� -->
+  <script>
+    // ���ʃT�C�Y
+    const SCREEN_WIDTH = 640;
+    const SCREEN_HEIGHT = 480;
+
+    // �F
+    const BLACK = "rgb(0, 0, 0)";
+    const WHITE = "rgb(255, 255, 255)";
+    const RED = "rgb(255, 0, 0)";
+    const YELLOW = "rgb(255, 255, 0)";
+
+    // ������
+    let canvas = document.getElementById("mycanvas");
+    let ctx = canvas.getContext("2d");
+
+    // �w�i�摜�̓ǂݍ���
+    let background = new Image();
+    background.src = "background.png";
+
+    /* �t�H���g�̐ݒ� */
+    ctx.font = "36px sans-serif";
+    ctx.fillStyle = WHITE;
+
+    // �X�v���C�g�̍쐬
+    class Player {
+      constructor() {
+        this.image = new Image();
+        this.image.src = "track.png";
+        this.width = 64;
+        this.height = 64;
+        this.x = SCREEN_WIDTH / 2;
+        this.y = SCREEN_HEIGHT - 100;
+        this.speed = 5;
+        this.lives = 3;
+        this.score = 0;
+        this.jump_height = 75; // �W�����v�̍���
+        this.jump_speed = 7; // �W�����v�̑��x
+        this.jump_count = 0; // �W�����v���̃J�E���g
+      }
+
+      update() {
+        // �L�[�{�[�h���͂̏���
+        if (keys["ArrowLeft"]) {
+          this.x -= this.speed;
+        }
+        if (keys["ArrowRight"]) {
+          this.x += this.speed;
+        }
+
+        // �W�����v����
+        if (keys["Space"]) {
+          if (this.jump_count == 0) {
+            this.jump_count = 1;
+          }
+        }
+        if (this.jump_count > 0) {
+          if (this.jump_count <= this.jump_height / 2) {
+            this.y -= this.jump_speed;
+          } else {
+            this.y += this.jump_speed;
+          }
+          this.jump_count++;
+          if (this.jump_count > this.jump_height) {
+            this.jump_count = 0;
+          }
+        }
+
+        // ���ʊO�ɏo�Ȃ��悤�ɂ���
+        if (this.x < 0) {
+          thisx = 0;
+        }
+        if (this.x > SCREEN_WIDTH - this.width) {
+          this.x = SCREEN_WIDTH - this.width;
+        }
+        if (this.y < 0) {
+          this.y = 0;
+        }
+        if (this.y > SCREEN_HEIGHT - this.height) {
+          this.y = SCREEN_HEIGHT - this.height;
+        }
+      }
+
+      draw() {
+        // �`��
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        ctx.fillText("Lives: " + this.lives + " Score: " + this.score, 10, 40);
+      }
+    }
+
+    // �G�̃X�v���C�g
+    class Enemy {
+      constructor() {
+        this.image = new Image();
+        this.image.src = "car_red.png";
+        this.width = 60;
+        this.height = 60;
+        this.x = Math.floor(Math.random() * (SCREEN_WIDTH - this.width));
+        this.y = -this.height;
+        this.speed = Math.floor(Math.random() * 5) + 1;
+      }
+
+      update() {
+        // �ړ�
+        this.y += this.speed;
+        if (this.y > SCREEN_HEIGHT) {
+          all_sprites_group.splice(all_sprites_group.indexOf(this),1);
+          enemy_group.splice(enemy_group.indexOf(this),1);
+        }
+      }
+
+      draw() {
+        // �`��
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+      }
+    }
+
+    // �X�v���C�g�O���[�v
+    let all_sprites_group = [];
+    let enemy_group = [];
+
+    // �v���C���[�̍쐬
+    let player = new Player();
+    all_sprites_group.push(player);
+
+    // �Q�[�����[�v
+    let done = false;
+
+    function gameLoop() {
+
+      // �w�i�摜���`�悷���i�������d�v�j
+      ctx.drawImage(background, 0, 0);
+
+      // �G�̍쐬
+      if (Math.floor(Math.random() * 30) == 1) {
+        let enemy = new Enemy();
+        all_sprites_group.push(enemy);
+        enemy_group.push(enemy);
+      }
+
+      // �����蔻��
+      for (let enemy of enemy_group) {
+        if (player.x < enemy.x + enemy.width &&
+          player.x + player.width > enemy.x &&
+          player.y < enemy.y + enemy.height &&
+          player.y + player.height > enemy.y) {
+          player.lives--;
+          if (player.lives <= 0) {
+            done = true;
+          }
+        }
+      }
+
+      // �X�v���C�g�̍X�V�ƕ`��
+      for (let sprite of all_sprites_group) {
+        sprite.update();
+        sprite.draw();
+      }
+
+      // �X�R�A�̍X�V
+      for (let enemy of enemy_group) {
+        if (enemy.y > SCREEN_HEIGHT) {
+          player.score += 10;
+        }
+      }
+
+      // ���ʂ̍X�V
+      requestAnimationFrame(gameLoop);
+    }
+
+    // �L�[�{�[�h���͂̏���
+    let keys = {};
+
+    document.addEventListener("keydown", function(event) {
+      keys[event.key] = true;
+    });
+
+    document.addEventListener("keyup", function(event) {
+      keys[event.key] = false;
+    });
+
+    // �Q�[���J�n
+    gameLoop();
+  </script>
+</body>
+</html>
